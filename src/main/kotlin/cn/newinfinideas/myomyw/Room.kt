@@ -1,5 +1,7 @@
 package cn.newinfinideas.myomyw
 
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.math.floor
 
 enum class EndReason {
@@ -197,4 +199,19 @@ class Room(
         this.rCol = this.lCol
         this.lCol = temp
     }
+}
+
+object RoomHost {
+    var pending: Player? = null
+    var id: Int = 0
+    fun startMatch(player: Player) = synchronized(this) {
+        if (pending == null) pending = player
+        else {
+            val room = Room(pending!!, player, {}, id++)
+            pending = null
+            GlobalScope.launch { room.start() }
+        }
+    }
+
+    fun cancelMatch(player: Player) = synchronized(this) { if (pending == player) pending = null }
 }

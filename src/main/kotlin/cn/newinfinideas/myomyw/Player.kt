@@ -1,6 +1,6 @@
 package cn.newinfinideas.myomyw
 
-import com.google.gson.GsonBuilder;
+import com.google.gson.GsonBuilder
 
 class Player(private val socket: Bus, val name: String, private val id: Int) {
     val builder = GsonBuilder()

@@ -1,5 +1,6 @@
 package cn.newinfinideas.myomyw
 
+import com.google.gson.Gson
 import io.ktor.http.cio.websocket.*
 
 class Bus(private val session: WebSocketSession) {
@@ -16,9 +17,13 @@ class Bus(private val session: WebSocketSession) {
         }
     }
 
-    suspend fun emit(name: String, content: String) {
-        session.outgoing.send(Frame.Text("$name$@@$$content"))
+    inline fun <reified T> on(reset: Boolean, crossinline func: suspend (T) -> Unit) {
+        this.on(PacketTable.getName(T::class), reset) { func(Gson().fromJson(it, T::class.java)) }
     }
+
+    suspend fun emit(name: String, content: String) = session.outgoing.send(Frame.Text("$name$@@$$content"))
+
+    suspend inline fun <reified T> emit(content: T) = emit(PacketTable.getName(T::class), Gson().toJson(content))
 
     suspend fun recv(content: String) {
         val name = content.substringBefore("$@@$")

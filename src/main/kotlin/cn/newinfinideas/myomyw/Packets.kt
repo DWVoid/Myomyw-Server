@@ -2,6 +2,10 @@ package cn.newinfinideas.myomyw
 
 import kotlin.reflect.KClass
 
+data class LoginPacket(var name: String)
+
+class MatchPacket
+
 data class StartPacket(val side: Int, val room: Int, val opponentName: String)
 
 data class NextChessmanPacket(val chessman: Chessman)
@@ -26,6 +30,8 @@ object PacketTable {
     fun getClass(name: String) = invMap[name]!!
 
     init {
+        push(LoginPacket::class, "login")
+        push(MatchPacket::class, "match")
         push(StartPacket::class, "start")
         push(NextChessmanPacket::class, "nextChessman")
         push(EndTurnPacket::class, "endTurn")
