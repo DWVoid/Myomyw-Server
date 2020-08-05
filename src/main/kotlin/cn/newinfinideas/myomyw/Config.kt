@@ -2,7 +2,7 @@ package cn.newinfinideas.myomyw
 
 object Config {
     val port = 8650
-    val allowOrigin = '*'
+    val allowOrigin = "*"
     val maxRooms = 100
     val version = "0.7"
 
