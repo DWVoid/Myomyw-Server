@@ -25,7 +25,7 @@ class Room(
     private var nextChessman = Chessman.Common
     private var movingCol: Int? = null
     private var totalMovementTimes = 0
-    private var timeOutTID: Timeout? = null
+    private var timeOut: Timeout? = null
     private var ended = false
     private var chessmen = ArrayList<ArrayList<Chessman>>()
 
@@ -41,43 +41,39 @@ class Room(
     }
 
     suspend fun start() {
-        this.leftPlayer.emit("start", "{\"side\":$left,\"room\":$id,\"opponentName\":\"${this.rightPlayer.name}\"}")
-        this.rightPlayer.emit("start", "{\"side\":$right,\"room\":$id,\"opponentName\":\"${this.leftPlayer.name}\"}")
+        this.leftPlayer.emit(StartPacket(left, id, rightPlayer.name))
+        this.rightPlayer.emit(StartPacket(right, id, leftPlayer.name))
         this.createAndTellNextChessman()
     }
 
     private fun setPlayer(player: Player, side: Int) {
-        player.on("move") { onMove(side, it) }
-        player.on("endTurn") { onEndTurn(side) }
+        player.onPacket<MovePacket> { onMove(side, it) }
+        player.onPacket<EndTurnPacket> { onEndTurn(side) }
         player.on("disconnect") { onDisconnect(side) }
     }
 
-    fun currentPlayer(): Player {
-        return if (this.turn == left) this.leftPlayer else this.rightPlayer
-    }
+    fun currentPlayer() = if (this.turn == left) this.leftPlayer else this.rightPlayer
 
-    fun waitingPlayer(): Player {
-        return if (this.turn == left) this.rightPlayer else this.leftPlayer
-    }
+    fun waitingPlayer() = if (this.turn == left) this.rightPlayer else this.leftPlayer
 
     //只有每回合的第一次移动才传递col
-    private suspend fun onMove(side: Int, data: String) {
+    private suspend fun onMove(side: Int, data: MovePacket) {
         if (side != this.turn) return
-        if ('col' in data && this.movingCol == null) {
+        if (data.col != null && this.movingCol == null) {
             this.movingCol = data.col
         }
         if (this.movingCol != null && this.totalMovementTimes < Config.maxMovementTimes) {
             this.totalMovementTimes++
-            this.waitingPlayer().emit("move", { col: data.col })
+            this.waitingPlayer().emit(MovePacket(data.col))
             if (this.move(this.movingCol!!, this.nextChessman)) {
-                this.currentPlayer().emit("endGame", "{\"reason\":${EndReason.OpponentWins}}")
-                this.waitingPlayer().emit("endGame", "{\"reason\":${EndReason.YouWin}}")
-                this.timeOutTID?.cancel()
+                this.currentPlayer().emit(EndGamePacket(EndReason.OpponentWins))
+                this.waitingPlayer().emit(EndGamePacket(EndReason.YouWin))
+                this.timeOut?.cancel()
                 this.close()
             } else {
-                this.timeOutTID?.cancel()
+                this.timeOut?.cancel()
                 //此举是为了防止两次移动间间隔时间过长
-                this.timeOutTID = Timeout(Config.timeLimit.toLong()) { timeOut() }
+                this.timeOut = Timeout(Config.timeLimit.toLong()) { timeOut() }
                 this.createAndTellNextChessman()
             }
         }
@@ -87,15 +83,14 @@ class Room(
         if (side == this.turn && this.movingCol != null && this.totalMovementTimes <= Config.maxMovementTimes) {
             this.movingCol = null
             this.setTurn(if (this.turn == left) right else left)
-            this.currentPlayer().emit("endTurn", "")
+            this.currentPlayer().emit(EndTurnPacket())
         }
     }
 
     private suspend fun onDisconnect(side: Int) {
         if (!this.ended) {
-            (if (side == left) this.rightPlayer else this.leftPlayer)
-                .emit("endGame", "{\"reason\":${EndReason.OpponentLeft}}")
-            this.timeOutTID?.cancel()
+            (if (side == left) this.rightPlayer else this.leftPlayer).emit(EndGamePacket(EndReason.OpponentLeft))
+            this.timeOut?.cancel()
             this.close()
         }
     }
@@ -113,20 +108,20 @@ class Room(
         this.turn = turn
         this.movingCol = null
         this.totalMovementTimes = 0
-        this.timeOutTID?.cancel()
-        this.timeOutTID = Timeout(Config.timeLimit.toLong()) { timeOut() }
+        this.timeOut?.cancel()
+        this.timeOut = Timeout(Config.timeLimit.toLong()) { timeOut() }
     }
 
     private suspend fun timeOut() {
-        this.currentPlayer().emit("endGame", "{\"reason\":${EndReason.YouOutOfTime}}")
-        this.waitingPlayer().emit("endGame", "{\"reason\":${EndReason.OpponentOutOfTime}}")
+        this.currentPlayer().emit(EndGamePacket(EndReason.YouOutOfTime))
+        this.waitingPlayer().emit(EndGamePacket(EndReason.OpponentOutOfTime))
         this.close()
     }
 
     private suspend fun createAndTellNextChessman() {
         this.nextChessman = this.getRandomChessman()
-        this.leftPlayer.emit("nextChessman", "{\"chessman\":${this.nextChessman}}")
-        this.rightPlayer.emit("nextChessman", "{\"chessman\":${this.nextChessman}}")
+        this.leftPlayer.emit(NextChessmanPacket(nextChessman))
+        this.rightPlayer.emit(NextChessmanPacket(nextChessman))
     }
 
     private fun getRandomChessman(): Chessman {
