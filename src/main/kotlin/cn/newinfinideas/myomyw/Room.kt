@@ -204,6 +204,7 @@ class Room(
 object RoomHost {
     var pending: Player? = null
     var id: Int = 0
+
     fun startMatch(player: Player) = synchronized(this) {
         if (pending == null) pending = player
         else {

@@ -25,9 +25,36 @@ class Bus(private val session: WebSocketSession) {
 
     suspend inline fun <reified T> emit(content: T) = emit(PacketTable.getName(T::class), Gson().toJson(content))
 
-    suspend fun recv(content: String) {
+    suspend fun runLoop() {
+        for (frame in session.incoming) {
+            when (frame) {
+                is Frame.Text -> recv(frame.readText())
+                is Frame.Close -> handleDisconnect()
+                else -> TODO("handle other frames")
+            }
+        }
+        handleDisconnect()
+    }
+
+    var disconnected = false
+
+    private suspend fun handleDisconnect() {
+        val shallHandle: Boolean
+        synchronized(disconnected) {
+            shallHandle = !disconnected
+            if (!disconnected) disconnected = true
+        }
+        if (shallHandle) handleFrame("disconnect", "{}")
+    }
+
+    private suspend fun recv(content: String) {
         val name = content.substringBefore("$@@$")
-        val body = content.substringAfter("$@@$")
+        var body = content.substringAfter("$@@$")
+        if (body.isEmpty()) body = "{}"
+        handleFrame(name, body)
+    }
+
+    private suspend fun handleFrame(name: String, body: String) {
         var unit: Array<suspend (String) -> Unit>? = null
         synchronized(onMsg) {
             val q = onMsg[name]

@@ -11,8 +11,6 @@ import io.ktor.http.CacheControl
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.readText
 import io.ktor.http.content.CachingOptions
 import io.ktor.response.respondText
 import io.ktor.routing.Routing
@@ -57,13 +55,7 @@ private fun Application.appRouting() {
                     player!!.on("disconnect") { RoomHost.cancelMatch(player!!) }
                 }
             }
-            for (frame in incoming) {
-                when (frame) {
-                    is Frame.Text -> bus.recv(frame.readText())
-                    is Frame.Close -> bus.recv("disconnect\$@@\$")
-                    else -> TODO("handle other frames")
-                }
-            }
+            bus.runLoop()
         }
     }
 }
