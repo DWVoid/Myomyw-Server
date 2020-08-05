@@ -8,13 +8,17 @@ class MatchPacket
 
 data class StartPacket(val side: Int, val room: Int, val opponentName: String)
 
-data class NextChessmanPacket(val chessman: Chessman)
+data class NextChessmanPacket(val chessman: Int) {
+    constructor(chessman: Chessman): this(chessman.ordinal)
+}
 
 class EndTurnPacket
 
 data class MovePacket(val col: Int?)
 
-data class EndGamePacket(val reason: EndReason)
+data class EndGamePacket(val reason: Int) {
+   constructor(reason: EndReason): this(reason.ordinal)
+}
 
 object PacketTable {
     private val map = HashMap<KClass<*>, String>()
