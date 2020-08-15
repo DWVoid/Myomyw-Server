@@ -1,4 +1,4 @@
-package cn.newinfinideas.myomyw
+package cn.newinfinideas.myomyw.game
 
 import com.google.gson.Gson
 import io.ktor.http.cio.websocket.*
@@ -23,7 +23,10 @@ class Bus(private val session: WebSocketSession) {
 
     suspend fun emit(name: String, content: String) = session.outgoing.send(Frame.Text("$name$@@$$content"))
 
-    suspend inline fun <reified T> emit(content: T) = emit(PacketTable.getName(T::class), Gson().toJson(content))
+    suspend inline fun <reified T> emit(content: T) = emit(
+        PacketTable.getName(
+            T::class
+        ), Gson().toJson(content))
 
     suspend fun runLoop() {
         for (frame in session.incoming) {

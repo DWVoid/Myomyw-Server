@@ -1,5 +1,7 @@
 package cn.newinfinideas.myomyw
 
+import cn.newinfinideas.myomyw.game.Bus
+import cn.newinfinideas.myomyw.game.PacketTable
 import com.google.gson.GsonBuilder
 
 class Player(private val socket: Bus, val name: String, private val id: Int) {

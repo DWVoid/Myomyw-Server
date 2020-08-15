@@ -1,5 +1,6 @@
 package cn.newinfinideas.myomyw
 
+import cn.newinfinideas.myomyw.game.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.math.floor
@@ -91,7 +92,11 @@ class Room(
 
     private suspend fun onDisconnect(side: Int) {
         if (!this.ended) {
-            (if (side == left) this.rightPlayer else this.leftPlayer).emit(EndGamePacket(EndReason.OpponentLeft))
+            (if (side == left) this.rightPlayer else this.leftPlayer).emit(
+                EndGamePacket(
+                    EndReason.OpponentLeft
+                )
+            )
             this.timeOut?.cancel()
             this.close()
         }

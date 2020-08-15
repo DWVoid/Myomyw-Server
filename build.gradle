@@ -22,6 +22,9 @@ dependencies {
     implementation "io.ktor:ktor-server-netty:$ktor_version"
     implementation "io.ktor:ktor-websockets:$ktor_version"
     implementation "com.google.code.gson:gson:2.8.6"
+    compileOnly 'io.jsonwebtoken:jjwt-api:0.11.2'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
+    implementation 'io.jsonwebtoken:jjwt-gson:0.11.2'
     implementation "org.slf4j:slf4j-simple:1.7.21"
 }
 
